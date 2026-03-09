@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Candidatures - Sakina Zariouh</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 40px;
+            margin: 0;
+        }
+        h1 { color: #2c3e50; margin-bottom: 5px; }
+        p { color: #7f8c8d; margin-bottom: 30px; }
+        
+        .dashboard-container {
+            background: #fff; border-radius: 10px; padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        /* Formulaire d'ajout */
+        .add-form {
+            display: flex; gap: 15px; margin-bottom: 25px;
+            padding-bottom: 25px; border-bottom: 2px dashed #eee;
+        }
+        .add-form input {
+            flex: 1; padding: 10px 15px; border: 1px solid #ccc;
+            border-radius: 6px; font-family: 'Inter', sans-serif;
+        }
+        .btn-add {
+            background: #005A9C; color: white; border: none;
+            padding: 10px 20px; border-radius: 6px; font-weight: 600;
+            cursor: pointer; transition: 0.2s;
+        }
+        .btn-add:hover { background: #003F6B; }
+
+        /* Tableau */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #2c3e50; font-weight: 600; }
+        
+        /* Badges */
+        .badge {
+            padding: 6px 12px; border-radius: 20px; font-size: 12px;
+            font-weight: 600; cursor: pointer; border: none; transition: 0.2s;
+        }
+        .status-attente { background-color: #ffeaa7; color: #d35400; }
+        .status-entretien { background-color: #55efc4; color: #00b894; }
+        .status-refus { background-color: #fab1a0; color: #d63031; }
+
+        .type-tag {
+            font-size: 11px; background: #dfe6e9; padding: 4px 8px;
+            border-radius: 4px; color: #2d3436; font-weight: 600;
+        }
+
+        .btn-delete {
+            background: none; border: none; color: #e74c3c;
+            cursor: pointer; font-size: 16px; opacity: 0.5; transition: 0.2s;
+        }
+        .btn-delete:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <h1>🚀 Suivi des Candidatures (Stage)</h1>
+    <p>Tes données sont sauvegardées automatiquement dans ton navigateur (LocalStorage).</p>
+
+    <div class="dashboard-container">
+        
+        <form class="add-form" id="addForm">
+            <input type="text" id="companyInput" placeholder="Nom de l'entreprise" required>
+            <input type="text" id="sectorInput" placeholder="Secteur (ex: Agence Web)" required>
+            <input type="text" id="methodInput" placeholder="Méthode (ex: LinkedIn, Mail...)" required>
+            <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Ajouter</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Entreprise</th>
+                    <th>Secteur</th>
+                    <th>Méthode</th>
+                    <th>Statut</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Liste par défaut (Les candidatures d'aujourd'hui)
+        const defaultApps = [
+            { company: 'Euro Information', sector: 'Banque / IT', method: 'Mail + Vercel', status: 'En attente' },
+            { company: 'Veolia', sector: 'Industrie', method: 'LinkedIn (Emine)', status: 'En attente' },
+            { company: 'École Avicenne', sector: 'Éducation', method: 'Mail Direct', status: 'En attente' },
+            { company: 'OLWE', sector: 'Agence Web', method: 'Formulaire', status: 'En attente' },
+            { company: 'Logitud Solutions', sector: 'Éditeur Logiciel', method: 'Mail RH', status: 'En attente' },
+            { company: 'Rector', sector: 'Industrie BTP', method: 'Mail Direct', status: 'En attente' },
+            { company: 'S-Media', sector: 'Agence Web', method: 'Formulaire', status: 'En attente' },
+            { company: 'Alcatel-Lucent (ALE)', sector: 'Télécoms', method: 'Formulaire', status: 'En attente' },
+            { company: 'WAM', sector: 'Agence Digitale', method: 'Formulaire', status: 'En attente' }
+        ];
+
+        // 1. Initialisation : On récupère les données du LocalStorage ou on charge la liste par défaut
+        let applications = JSON.parse(localStorage.getItem('sakinaCandidatures'));
+        
+        if (!applications || applications.length === 0) {
+            applications = defaultApps;
+            saveData(); // On sauvegarde la liste par défaut
+        }
+
+        // 2. Fonction pour afficher le tableau
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ''; // On vide le tableau avant de le recréer
+
+            applications.forEach((app, index) => {
+                // Déterminer la couleur du badge
+                let badgeClass = 'status-attente';
+                if (app.status === 'Entretien 🎉') badgeClass = 'status-entretien';
+                else if (app.status === 'Refus ❌') badgeClass = 'status-refus';
+
+                // Création de la ligne
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${app.company}</strong></td>
+                    <td>${app.sector}</td>
+                    <td><span class="type-tag">${app.method}</span></td>
+                    <td><button class="badge ${badgeClass}" onclick="toggleStatus(${index})">${app.status}</button></td>
+                    <td><button class="btn-delete" onclick="deleteApp(${index})" title="Supprimer"><i class="fas fa-trash"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 3. Sauvegarder dans le LocalStorage
+        function saveData() {
+            localStorage.setItem('sakinaCandidatures', JSON.stringify(applications));
+        }
+
+        // 4. Changer le statut (En attente -> Entretien -> Refus -> En attente)
+        function toggleStatus(index) {
+            const currentStatus = applications[index].status;
+            if (currentStatus === 'En attente') {
+                applications[index].status = 'Entretien 🎉';
+            } else if (currentStatus === 'Entretien 🎉') {
+                applications[index].status = 'Refus ❌';
+            } else {
+                applications[index].status = 'En attente';
+            }
+            saveData();
+            renderTable(); // On met à jour l'affichage
+        }
+
+        // 5. Ajouter une nouvelle candidature
+        document.getElementById('addForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Empêche le rechargement de la page
+            
+            const company = document.getElementById('companyInput').value;
+            const sector = document.getElementById('sectorInput').value;
+            const method = document.getElementById('methodInput').value;
+
+            // Ajout au tableau
+            applications.push({
+                company: company,
+                sector: sector,
+                method: method,
+                status: 'En attente'
+            });
+
+            saveData();
+            renderTable();
+            
+            // Vider le formulaire
+            this.reset();
+        });
+
+        // 6. Supprimer une candidature
+        function deleteApp(index) {
+            if (confirm('Es-tu sûre de vouloir supprimer cette candidature ?')) {
+                applications.splice(index, 1); // Enlève 1 élément à l'index donné
+                saveData();
+                renderTable();
+            }
+        }
+
+        // 7. Affichage initial au chargement de la page
+        renderTable();
+
+    </script>
+</body>
+</html>
